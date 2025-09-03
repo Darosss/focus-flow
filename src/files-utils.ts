@@ -1,4 +1,4 @@
-import { writeFile, readFile, mkdir } from "fs/promises";
+import { writeFile, readFile, access, mkdir } from "fs/promises";
 
 import path from "path";
 
@@ -8,7 +8,7 @@ type UrlType = {
   extension: string;
 };
 
-type CreateNotExistingPathUrl = Pick<UrlType, "absolute" | "url"> &
+export type CreateNotExistingPathUrl = Pick<UrlType, "absolute" | "url"> &
   Partial<UrlType>;
 
 const defaultFileEncoding = "utf-8";
@@ -20,6 +20,7 @@ export const writeFileAsync = async (
   const urlToSave = absolute
     ? url + extension
     : path.join(baseDataFolder, path.basename(url)) + extension;
+
   await writeFile(urlToSave, data, { encoding: defaultFileEncoding });
 };
 
@@ -37,6 +38,22 @@ export const readFileAsync = async <T>({
   })) as unknown as T;
 };
 
+export const directoryExist = async ({
+  absolute,
+  url,
+  extension,
+}: CreateNotExistingPathUrl) => {
+  const urlToCheck = absolute
+    ? url + extension || ""
+    : path.join(baseDataFolder, path.basename(url)) + extension || "";
+
+  try {
+    await access(urlToCheck);
+    return true;
+  } catch (err) {
+    return false;
+  }
+};
 export const createNotExistingPath = async ({
   absolute,
   url,
