@@ -5,11 +5,8 @@ export type ResultJSON = Result & {
 };
 
 export type DataJSON = {
-  date: {
-    value: Date;
-    data: {
-      active: ResultJSON[];
-      allWindows: ResultJSON[];
-    };
+  [index: string]: {
+    active: ResultJSON[];
+    allWindows: ResultJSON[];
   };
 };

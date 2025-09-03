@@ -41,12 +41,9 @@ export class ActivityTracker {
   public async saveCurrentData() {
     try {
       await this.dataSaver.updateData({
-        date: {
-          value: new Date(),
-          data: {
-            active: this.activeTabCache,
-            allWindows: this.allTabCache,
-          },
+        [`${new Date().toISOString()}`]: {
+          active: this.activeTabCache,
+          allWindows: this.allTabCache,
         },
       });
       this.clearCurrentDataCache();

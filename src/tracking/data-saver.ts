@@ -1,4 +1,4 @@
-import { readFileAsync, writeFileAsync } from "../files-utils";
+import { directoryExist, readFileAsync, writeFileAsync } from "../files-utils";
 import { DataJSON } from "./types";
 
 export class DataSaver {
@@ -12,17 +12,19 @@ export class DataSaver {
 
   private async ensureDirectoryExist() {
     // await createNotExistingPath({ url: this.dataFileName });
-    await writeFileAsync(
-      { url: this.dataFileName, extension: this.fileExtension },
-      "{}"
-    );
+
+    const fileOpts = { url: this.dataFileName, extension: this.fileExtension };
+    if (await directoryExist(fileOpts)) return;
+
+    await writeFileAsync(fileOpts, "{}");
   }
-  public async updateData(newData: DataJSON) {
+  public async updateData(data: DataJSON) {
     try {
       const previousData = await this.readData();
+
       await writeFileAsync(
         { url: this.dataFileName, extension: this.fileExtension },
-        JSON.stringify({ ...previousData, newData })
+        JSON.stringify({ ...previousData, ...data })
       );
     } catch (err) {
       return console.error("Couldnt save the data", err);
