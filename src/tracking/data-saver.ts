@@ -1,6 +1,8 @@
 import { directoryExist, readFileAsync, writeFileAsync } from "../files-utils";
 import { DataJSON } from "./types";
 
+type GetFileNameByDate = { year: number; month: number; day: number };
+
 export class DataSaver {
   private readonly dataFileName = "../data";
   private readonly fileExtension = ".json";
@@ -10,10 +12,24 @@ export class DataSaver {
     await this.ensureDirectoryExist();
   }
 
-  private async ensureDirectoryExist() {
-    // await createNotExistingPath({ url: this.dataFileName });
+  private getTodayFileName() {
+    const todayDate = new Date();
 
-    const fileOpts = { url: this.dataFileName, extension: this.fileExtension };
+    return this.getFileNameByDate({
+      year: todayDate.getFullYear(),
+      month: todayDate.getMonth(),
+      day: todayDate.getDay(),
+    });
+  }
+  private getFileNameByDate(date: GetFileNameByDate) {
+    return `${this.dataFileName}-` + `${date.year}-${date.month}-${date.day}`;
+  }
+
+  private async ensureDirectoryExist() {
+    const fileOpts = {
+      url: this.getTodayFileName(),
+      extension: this.fileExtension,
+    };
     if (await directoryExist(fileOpts)) return;
 
     await writeFileAsync(fileOpts, "{}");
@@ -23,7 +39,7 @@ export class DataSaver {
       const previousData = await this.readData();
 
       await writeFileAsync(
-        { url: this.dataFileName, extension: this.fileExtension },
+        { url: this.getTodayFileName(), extension: this.fileExtension },
         JSON.stringify({ ...previousData, ...data })
       );
     } catch (err) {
@@ -33,7 +49,7 @@ export class DataSaver {
 
   public async readData() {
     const data = await readFileAsync<string>({
-      url: this.dataFileName,
+      url: this.getTodayFileName(),
       extension: this.fileExtension,
     });
 
