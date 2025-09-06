@@ -1,17 +1,29 @@
 import { HashRouter, Route, Routes } from "react-router-dom";
-import { Layout } from "./layout";
+import { Sidebar } from "./sidebar";
+import { useState } from "react";
+import { routesList } from "../routes-list";
 
 export const App = () => {
+  const [collapsedSidebar, setCollapsedSidebar] = useState(false);
+
   return (
-    <div className="flex flex-col bg-yellow-200 w-full">
+    <div className="flex w-full">
       <HashRouter>
-        <nav className="sticky top-0 bg-red-200 h-[20vh] w-full">
-          <Layout />
+        <nav className={`h-screen h-full`}>
+          <Sidebar
+            collapsed={collapsedSidebar}
+            onToggle={() => setCollapsedSidebar(!collapsedSidebar)}
+          />
         </nav>
-        <main className="sticky top-0 bg-blue-200 flex-grow h-[80vh]">
+        <main className="sticky top-0 bg-blue-200 flex-grow h-screen">
           <Routes>
-            <Route path="/" element={<>Home</>} />
-            <Route path="/page2" element={<>Page 2</>} />
+            {routesList.map((route) => (
+              <Route
+                key={route.id}
+                path={route.id}
+                element={<route.element />}
+              />
+            ))}
           </Routes>
         </main>
       </HashRouter>
