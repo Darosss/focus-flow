@@ -18,6 +18,10 @@ export class ActivityTracker {
     this.startSaveInterval();
   }
 
+  public forceUpdate() {
+    this.sessionHandler.updateCurrentData();
+  }
+
   private startSaveInterval() {
     if (this.savingDataInterval)
       return console.log(

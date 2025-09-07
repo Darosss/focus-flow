@@ -8,9 +8,9 @@ declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 const dataSaver = new DataSaver();
 dataSaver.init();
-const activityTracker = new ActivityTracker(dataSaver);
+const activityTracker = new ActivityTracker();
 const gracefulExit = () => {
-  activityTracker.saveCurrentData();
+  activityTracker.forceUpdate();
   app.quit();
 };
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
