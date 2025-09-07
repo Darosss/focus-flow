@@ -1,24 +1,15 @@
-import { activeWindow, openWindows } from "get-windows";
-import { DataSaver } from "./data-saver";
-import { ResultJSON } from "./types";
+import { activeWindow, openWindows, Result } from "get-windows";
+import { ActivityTrackerSessionHandler } from "./session-handler";
 
 export class ActivityTracker {
-  private dataSaver: DataSaver;
   private checkingActiveTabMS = 2000;
   private checkingAllTabsMS = 30000;
   private savingTimeMS = 32500;
-
-  private activeTabCache: ResultJSON[] = [];
-  private allTabCache: ResultJSON[] = [];
-
+  private sessionHandler = new ActivityTrackerSessionHandler();
   private checkingActiveTabsInterval: NodeJS.Timeout | null = null;
   private checkingAllTabsInterval: NodeJS.Timeout | null = null;
 
   private savingDataInterval: NodeJS.Timeout | null = null;
-
-  constructor(dataSaver: DataSaver) {
-    this.dataSaver = dataSaver;
-  }
 
   async startTracking() {
     this.startTrackingActiveTab();
@@ -34,28 +25,10 @@ export class ActivityTracker {
       );
 
     this.savingDataInterval = setInterval(async () => {
-      this.saveCurrentData();
+      this.sessionHandler.updateCurrentData();
     }, this.savingTimeMS);
   }
 
-  public async saveCurrentData() {
-    try {
-      await this.dataSaver.updateData({
-        [`${new Date().toISOString()}`]: {
-          active: this.activeTabCache,
-          allWindows: this.allTabCache,
-        },
-      });
-      this.clearCurrentDataCache();
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
-  private async clearCurrentDataCache() {
-    this.allTabCache = [];
-    this.activeTabCache = [];
-  }
   private async startTrackingActiveTab() {
     if (this.checkingActiveTabsInterval)
       return console.log(
@@ -67,12 +40,40 @@ export class ActivityTracker {
       await this.onCheckActiveTabLogic();
     }, this.checkingActiveTabMS);
   }
+
+  private isNewSession(previous: Result) {
+    if (
+      previous.owner?.name !==
+      this.sessionHandler.getCurrentSessionData()?.appName
+    )
+      return true;
+  }
+
   private async onCheckActiveTabLogic() {
     const currentActiveWindow = await activeWindow();
-    this.activeTabCache.push({
-      ...currentActiveWindow,
-      date: new Date(),
-    });
+    const currentCheckDate = new Date();
+
+    if (this.isNewSession(currentActiveWindow)) {
+      this.sessionHandler.startNewSession(
+        currentActiveWindow,
+        currentCheckDate
+      );
+    }
+
+    const sessionData = this.sessionHandler.getCurrentSessionData();
+    if (!sessionData)
+      return console.warn(
+        "Trying to check active tab logic, tho the currentSessionData is null"
+      );
+
+    this.sessionHandler.pushToSessionSnapshotCache([
+      {
+        sessionId: sessionData.id,
+        snapshotTime: currentCheckDate,
+        title: currentActiveWindow.title,
+        memoryUsage: currentActiveWindow.memoryUsage,
+      },
+    ]);
   }
 
   private async startTrackingAllTabs() {
@@ -88,11 +89,31 @@ export class ActivityTracker {
   }
 
   private async onCheckAllTabsLogic() {
-    const currentAllWindow = await openWindows();
-    const currentDate = new Date();
-
-    this.allTabCache.push(
-      ...currentAllWindow.map((window) => ({ ...window, date: currentDate }))
+    const currentAllWindows = await openWindows();
+    const currentOpenTabs: string[] = currentAllWindows.map(
+      (w) => w.owner.name
     );
+
+    const now = new Date();
+    const allTabCache = this.sessionHandler.getAllTabCache();
+    for (const tabName of currentOpenTabs) {
+      const existing = allTabCache.get(tabName);
+      if (existing) {
+        existing.lastSeen = now;
+      } else {
+        this.sessionHandler.setItemInAllTabCache(tabName, {
+          tabName,
+          firstSeen: now,
+          lastSeen: now,
+        });
+      }
+    }
+
+    for (const [tabName, tab] of allTabCache) {
+      if (!currentOpenTabs.includes(tabName)) {
+        tab.lastSeen = now;
+        this.sessionHandler.removeItemFromAllTabCache(tabName);
+      }
+    }
   }
 }
