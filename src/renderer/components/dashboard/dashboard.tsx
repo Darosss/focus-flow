@@ -17,23 +17,18 @@ export const DashboardView = () => {
   }, []);
 
   const [isLiveView, setIsLiveView] = useState(true);
-  const [currentTime, setCurrentTime] = useState<number>(
-    currentActivity?.duration || 0
-  );
 
   return (
     <div className="flex flex-col h-full">
       <DashboardHeader
         isLiveView={isLiveView}
         onToggleLiveView={() => setIsLiveView(!isLiveView)}
-        setCurrentTime={setCurrentTime}
       />
 
       <DashboardContent
         isLiveView={isLiveView}
         currentActivity={currentActivity}
         lastUsedApps={lastUsedApps || []}
-        currentTime={currentTime}
       />
     </div>
   );

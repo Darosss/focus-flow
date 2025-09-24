@@ -9,34 +9,20 @@ import {
 } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { CurrentActivity, LastUsedApps } from "./types";
+import { FC, useEffect, useState } from "react";
+import { formatTime } from "../../lib/utils";
 
 type DashboardContentProps = {
   lastUsedApps: LastUsedApps;
   currentActivity: CurrentActivity;
-  currentTime: number;
   isLiveView: boolean;
 };
 
 export const DashboardContent = ({
   lastUsedApps,
   currentActivity,
-  currentTime,
   isLiveView,
 }: DashboardContentProps) => {
-  const formatTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-
-    if (hours > 0) {
-      return `${hours}h ${minutes}m ${secs}s`;
-    } else if (minutes > 0) {
-      return `${minutes}m ${secs}s`;
-    } else {
-      return `${secs}s`;
-    }
-  };
-
   const totalTime = lastUsedApps.reduce((acc, item) => acc + item.time, 0);
 
   //TODO: make productive time? hmm..
@@ -134,7 +120,9 @@ export const DashboardContent = ({
                   </div>
                   <div className="text-right">
                     <div className="text-2xl font-bold text-primary">
-                      {formatTime(currentTime)}
+                      <CurrentSessionTime
+                        initialTime={currentActivity.duration}
+                      />
                     </div>
                     <p className="text-xs text-muted-foreground">
                       Current session
@@ -216,4 +204,19 @@ export const DashboardContent = ({
       </Card>
     </div>
   );
+};
+
+type CurrentSessionTimeProps = {
+  initialTime: number;
+};
+const CurrentSessionTime: FC<CurrentSessionTimeProps> = ({ initialTime }) => {
+  const [currentTime, setCurrentTime] = useState(initialTime);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return <> {formatTime(currentTime)}</>;
 };
