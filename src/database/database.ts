@@ -1,7 +1,7 @@
 import Database from "better-sqlite3";
 import path from "path";
 import { app } from "electron";
-import { AllTab, SessionSnapshot } from "../tracking/types";
+import { AllTab, SessionSnapshot, TimeData } from "../tracking/types";
 
 const dbPath = path.join(app.getPath("userData"), "tracker.sqlite");
 const db = new Database(dbPath);
@@ -213,4 +213,59 @@ export function getAllTabs() {
     FROM all_tabs
   `);
   return stmt.all();
+}
+
+export function getUsageStats(
+  sinceMinutes = 60,
+  includeLive = true
+): TimeData[] {
+  const sinceArg = `-${sinceMinutes} minutes`;
+
+  const sql = `
+    WITH recent AS (
+      SELECT
+        ss.id,
+        ss.session_id,
+        ss.snapshot_time AS snapshot_time,
+        a.app_name,
+        a.end_time
+      FROM session_snapshots ss
+      JOIN active_sessions a ON ss.session_id = a.id
+      WHERE ss.snapshot_time >= datetime('now', ?)
+      ORDER BY ss.session_id, ss.snapshot_time
+    ),
+    with_next AS (
+      SELECT
+        session_id,
+        app_name,
+        snapshot_time,
+        LEAD(snapshot_time) OVER (PARTITION BY session_id ORDER BY snapshot_time) AS next_time,
+        end_time
+      FROM recent
+    )
+    SELECT
+      app_name AS name,
+      SUM(
+        CAST(
+          (
+            julianday(
+              COALESCE(
+                next_time,
+                CASE WHEN end_time IS NOT NULL THEN end_time ELSE datetime('now') END
+              )
+            )
+            - julianday(snapshot_time)
+          ) * 86400
+          AS INTEGER
+        )
+      ) as time
+    FROM with_next
+    ${includeLive ? "" : "WHERE next_time IS NOT NULL OR end_time IS NOT NULL"}
+    GROUP BY app_name
+    ORDER BY time DESC
+  `;
+
+  const rows: TimeData[] = db.prepare(sql).all(sinceArg) as TimeData[];
+
+  return (rows || []).map((r) => ({ name: r.name, time: Number(r.time || 0) }));
 }
