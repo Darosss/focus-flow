@@ -1,13 +1,7 @@
-export type TimeData = {
-  name: string;
-  time: number;
-  category: string;
-  color: string;
-};
+export type CurrentActivity = Awaited<
+  ReturnType<typeof window.trackerAPI.getCurrentActivity>
+>;
 
-export type CurrentActivityData = {
-  name: string;
-  window: string;
-  duration: number;
-  category: string;
-};
+export type LastUsedApps = Awaited<
+  ReturnType<typeof window.trackerAPI.getLastUsedApps>
+>;
