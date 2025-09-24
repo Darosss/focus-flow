@@ -1,7 +1,13 @@
 import Database from "better-sqlite3";
 import path from "path";
 import { app } from "electron";
-import { AllTab, SessionSnapshot, TimeData } from "../tracking/types";
+import {
+  AllTab,
+  SessionSnapshot,
+  TimeData,
+  TODO,
+  CurrentActivityData,
+} from "../tracking/types";
 
 const dbPath = path.join(app.getPath("userData"), "tracker.sqlite");
 const db = new Database(dbPath);
@@ -268,4 +274,36 @@ export function getUsageStats(
   const rows: TimeData[] = db.prepare(sql).all(sinceArg) as TimeData[];
 
   return (rows || []).map((r) => ({ name: r.name, time: Number(r.time || 0) }));
+}
+
+export function getCurrentActivity(): CurrentActivityData | null {
+  const sql = `
+    SELECT
+      a.app_name AS name,
+      a.platform AS platform,
+      a.start_time AS start_time,
+      ss.title AS title,
+      ss.snapshot_time AS snapshot_time
+    FROM active_sessions a
+    LEFT JOIN session_snapshots ss
+      ON ss.session_id = a.id
+    WHERE a.end_time IS NULL
+    ORDER BY ss.snapshot_time DESC
+    LIMIT 1
+  `;
+
+  const row = db.prepare(sql).get() as TODO;
+
+  if (!row) return null;
+
+  const now = new Date();
+  const start = new Date(row.start_time);
+  const duration = Math.floor((now.getTime() - start.getTime()) / 1000);
+
+  return {
+    name: row.name,
+    title: row.title || "",
+    duration,
+    platform: row.platform,
+  };
 }

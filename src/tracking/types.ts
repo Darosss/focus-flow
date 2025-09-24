@@ -43,3 +43,15 @@ export type SessionAllTabs = {
 };
 
 export type TODO = any;
+
+export type TimeData = {
+  name: string;
+  time: number;
+};
+
+export type CurrentActivityData = {
+  name: string;
+  title: string;
+  duration: number;
+  platform: string;
+};
