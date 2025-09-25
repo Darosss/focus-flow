@@ -8,7 +8,7 @@ import {
   CardDescription,
 } from "../ui/card";
 import { Badge } from "../ui/badge";
-import { CurrentActivity, LastUsedApps } from "./types";
+import { CurrentActivity, LastUsedApps } from "../../types";
 import { FC, useEffect, useState } from "react";
 import { formatTime } from "../../lib/utils";
 

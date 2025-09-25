@@ -2,7 +2,7 @@
 
 import { DashboardHeader } from "./header";
 import { useEffect, useState } from "react";
-import { CurrentActivity, LastUsedApps } from "./types";
+import { CurrentActivity, LastUsedApps } from "../../types";
 import { DashboardContent } from "./content";
 
 export const DashboardView = () => {
