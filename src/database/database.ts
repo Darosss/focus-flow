@@ -7,11 +7,21 @@ import {
   TimeData,
   TODO,
   CurrentActivityData,
+  ActiveSession,
 } from "../tracking/types";
 
 const dbPath = path.join(app.getPath("userData"), "tracker.sqlite");
 const db = new Database(dbPath);
 
+export type GetActiveSessionsDateRange = {
+  start: Date;
+  end: Date;
+};
+
+export type GetActiveSessionsReturn = {
+  data: ActiveSession[];
+  totalPages: number;
+};
 db.exec(`
   CREATE TABLE IF NOT EXISTS active_sessions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -305,5 +315,37 @@ export function getCurrentActivity(): CurrentActivityData | null {
     title: row.title || "",
     duration,
     platform: row.platform,
+  };
+}
+
+export function getActiveSessions(
+  range?: GetActiveSessionsDateRange,
+  page = 1,
+  pageSize = 10
+): GetActiveSessionsReturn | null {
+  const whereClause = range
+    ? `WHERE start_time >= '${range.start}' AND end_time <= '${range.end}'`
+    : "";
+
+  const countSql = `SELECT COUNT(*) as total FROM active_sessions ${whereClause};`;
+  const { total } = db.prepare(countSql).get() as { total: number };
+
+  if (total === 0) return null;
+
+  const totalPages = Math.ceil(total / pageSize);
+  const offset = (page - 1) * pageSize;
+
+  const dataSql = `
+    SELECT id, app_name as appName, platform, start_time as startTime, end_time as endTime
+    FROM active_sessions
+    ${whereClause}
+    ORDER BY startTime DESC
+    LIMIT ${pageSize} OFFSET ${offset};
+  `;
+  const rows = db.prepare(dataSql).all() as ActiveSession[];
+
+  return {
+    data: rows,
+    totalPages,
   };
 }
