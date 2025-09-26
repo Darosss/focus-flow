@@ -349,3 +349,13 @@ export function getActiveSessions(
     totalPages,
   };
 }
+
+export function getSessionSnapshots(sessionId: number) {
+  const sql = `
+  SELECT id, memory_usage as memoryUsage, session_id as sessionId, snapshot_time as snapshotTime, title from session_snapshots WHERE session_id = ${sessionId}
+  `;
+
+  const rows = db.prepare(sql).all() as SessionSnapshot[];
+
+  return rows;
+}
