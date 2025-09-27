@@ -1,5 +1,11 @@
 import { ipcMain } from "electron";
-import { getCurrentActivity, getUsageStats } from "../database/database";
+import {
+  getActiveSessions,
+  getCurrentActivity,
+  GetActiveSessionsDateRange,
+  getUsageStats,
+  getSessionSnapshots,
+} from "../database/database";
 
 export class IpcMainHandler {
   constructor() {
@@ -14,6 +20,25 @@ export class IpcMainHandler {
 
     ipcMain.handle("get-current-activity", async () => {
       const data = getCurrentActivity();
+      return data;
+    });
+    ipcMain.handle(
+      "get-history-activity",
+      async (
+        e,
+        range: GetActiveSessionsDateRange,
+        page: number,
+        pageSize: number,
+        search?: string
+      ) => {
+        const data = getActiveSessions(range, page, pageSize, search);
+
+        return data;
+      }
+    );
+    ipcMain.handle("get-session-snapshots", async (e, sessionId: number) => {
+      const data = getSessionSnapshots(sessionId);
+
       return data;
     });
   }

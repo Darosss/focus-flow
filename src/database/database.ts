@@ -7,10 +7,25 @@ import {
   TimeData,
   TODO,
   CurrentActivityData,
+  ActiveSession,
 } from "../tracking/types";
 
 const dbPath = path.join(app.getPath("userData"), "tracker.sqlite");
 const db = new Database(dbPath);
+
+export type GetActiveSessionsDateRange = {
+  start: Date;
+  end: Date;
+};
+
+export type GetActiveSessionsReturn = {
+  data: ActiveSession[];
+  totalPages: number;
+};
+
+function toSqlDate(date: Date | string): string {
+  return new Date(date).toISOString().slice(0, 19).replace("T", " ");
+}
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS active_sessions (
@@ -306,4 +321,62 @@ export function getCurrentActivity(): CurrentActivityData | null {
     duration,
     platform: row.platform,
   };
+}
+
+export function getActiveSessions(
+  range?: GetActiveSessionsDateRange,
+  page = 1,
+  pageSize = 10,
+  search?: string
+): GetActiveSessionsReturn | null {
+  const params: { search?: string; start?: string; end?: string } = {};
+  const filters: string[] = [];
+  if (range) {
+    filters.push(`start_time >= @start AND end_time <= @end`);
+    params.start = toSqlDate(range.start);
+    params.end = toSqlDate(range.end);
+  }
+
+  if (search) {
+    filters.push(`(app_name LIKE @search OR platform LIKE @search)`);
+    params.search = `%${search}%`;
+  }
+
+  const whereClause = filters.length ? `WHERE ${filters.join(" AND ")}` : "";
+
+  const countSql = `SELECT COUNT(*) as total FROM active_sessions ${whereClause};`;
+
+  const { total } = db.prepare(countSql).get(params) as { total: number };
+
+  if (total === 0) return null;
+  const totalPages = Math.ceil(total / pageSize);
+  const offset = (page - 1) * pageSize;
+
+  const dataSql = `
+    SELECT id, app_name as appName, platform, start_time as startTime, end_time as endTime
+    FROM active_sessions
+    ${whereClause}
+    ORDER BY startTime DESC
+    LIMIT @limit OFFSET @offset;
+  `;
+  const rows = db.prepare(dataSql).all({
+    ...params,
+    limit: pageSize,
+    offset,
+  }) as ActiveSession[];
+
+  return {
+    data: rows,
+    totalPages,
+  };
+}
+
+export function getSessionSnapshots(sessionId: number) {
+  const sql = `
+  SELECT id, memory_usage as memoryUsage, session_id as sessionId, snapshot_time as snapshotTime, title from session_snapshots WHERE session_id = ${sessionId}
+  `;
+
+  const rows = db.prepare(sql).all() as SessionSnapshot[];
+
+  return rows;
 }

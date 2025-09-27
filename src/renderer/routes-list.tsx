@@ -8,6 +8,7 @@ import {
   Settings,
 } from "lucide-react";
 import { DashboardView } from "./components/dashboard/dashboard";
+import { HistoryView } from "./components/history/history";
 
 export type Route = {
   id: string;
@@ -43,7 +44,7 @@ export const routesList: Route[] = [
   },
   {
     id: "history",
-    element: () => <>history</>,
+    element: HistoryView,
     label: "History",
     icon: History,
     description: "Past days & trends",
