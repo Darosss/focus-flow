@@ -28,9 +28,10 @@ export class IpcMainHandler {
         e,
         range: GetActiveSessionsDateRange,
         page: number,
-        pageSize: number
+        pageSize: number,
+        search?: string
       ) => {
-        const data = getActiveSessions(range, page, pageSize);
+        const data = getActiveSessions(range, page, pageSize, search);
 
         return data;
       }

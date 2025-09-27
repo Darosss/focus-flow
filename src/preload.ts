@@ -18,8 +18,10 @@ contextBridge.exposeInMainWorld("trackerAPI", {
   getHistoryActivity: (
     range: GetActiveSessionsDateRange,
     page: number,
-    pageSize?: number
-  ) => ipcRenderer.invoke("get-history-activity", range, page, pageSize),
+    pageSize?: number,
+    search?: string
+  ) =>
+    ipcRenderer.invoke("get-history-activity", range, page, pageSize, search),
   getSessionSnapshots: (sessionId: number) =>
     ipcRenderer.invoke("get-session-snapshots", sessionId),
 });
@@ -30,7 +32,8 @@ export type TrackerAPI = {
   getHistoryActivity: (
     range: GetActiveSessionsDateRange,
     page: number,
-    pageSize?: number
+    pageSize?: number,
+    search?: string
   ) => Promise<GetActiveSessionsReturn>;
   getSessionSnapshots: (sessionId: number) => Promise<SessionSnapshot[]>;
 };
