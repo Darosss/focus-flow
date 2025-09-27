@@ -21,6 +21,7 @@ import {
   AccordionTrigger,
 } from "../ui/accordion";
 import { HistoryContent } from "./content";
+import { DateRange } from "./date-range";
 
 export const HistoryView = () => {
   const [currentSessionId, setCurrentSessionId] = useState(null);
@@ -41,8 +42,9 @@ export const HistoryView = () => {
           currentPage,
           10
         );
-        setCurrentHistory(result.data);
-        setTotalPages(result.totalPages);
+
+        setCurrentHistory(result?.data || []);
+        setTotalPages(result?.totalPages || 1);
       } catch (error) {
         console.error("Failed to fetch history:", error);
         setCurrentHistory([]);
@@ -82,10 +84,11 @@ export const HistoryView = () => {
               className="pl-10"
             />
           </div>
-          <Button variant="outline" size="sm">
-            <Calendar className="w-4 h-4 mr-2" />
-            Date Range
-          </Button>
+          <DateRange
+            onChange={(start, end) => {
+              setCurrentRange({ start, end });
+            }}
+          />
           <Button variant="outline" size="sm">
             <Filter className="w-4 h-4 mr-2" />
             Filters
