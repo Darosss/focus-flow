@@ -1,6 +1,6 @@
 "use client";
 
-import { History, Search, Filter, Calendar, Download } from "lucide-react";
+import { History, Search, Filter, Download } from "lucide-react";
 import { Button } from "../ui/button";
 import {
   Card,
@@ -26,6 +26,7 @@ import { DateRange } from "./date-range";
 export const HistoryView = () => {
   const [currentSessionId, setCurrentSessionId] = useState(null);
 
+  const [search, setSearch] = useState<string | null>(null);
   const [currentRange, setCurrentRange] =
     useState<Parameters<typeof window.trackerAPI.getHistoryActivity>[0]>();
   const [currentHistory, setCurrentHistory] = useState<HistoryActivity>([]);
@@ -40,7 +41,8 @@ export const HistoryView = () => {
         const result = await trackerApi.getHistoryActivity(
           currentRange,
           currentPage,
-          10
+          10,
+          search
         );
 
         setCurrentHistory(result?.data || []);
@@ -54,7 +56,7 @@ export const HistoryView = () => {
     };
 
     fetchHistory();
-  }, [currentRange, currentPage]);
+  }, [currentRange, currentPage, search]);
 
   return (
     <div className="flex flex-col h-full">
@@ -80,8 +82,11 @@ export const HistoryView = () => {
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search windows, apps, or titles..."
+              placeholder="Search apps or platforms"
               className="pl-10"
+              onChange={(e) => {
+                setSearch(e.currentTarget.value || null);
+              }}
             />
           </div>
           <DateRange
