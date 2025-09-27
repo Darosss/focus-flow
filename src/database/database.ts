@@ -326,16 +326,29 @@ export function getCurrentActivity(): CurrentActivityData | null {
 export function getActiveSessions(
   range?: GetActiveSessionsDateRange,
   page = 1,
-  pageSize = 10
+  pageSize = 10,
+  search?: string
 ): GetActiveSessionsReturn | null {
-  const whereClause = range
-    ? `WHERE start_time >= '${toSqlDate(range.start)}' AND end_time <= '${toSqlDate(range.end)}'`
-    : "";
+  const params: { search?: string; start?: string; end?: string } = {};
+  const filters: string[] = [];
+  if (range) {
+    filters.push(`start_time >= @start AND end_time <= @end`);
+    params.start = toSqlDate(range.start);
+    params.end = toSqlDate(range.end);
+  }
+
+  if (search) {
+    filters.push(`(app_name LIKE @search OR platform LIKE @search)`);
+    params.search = `%${search}%`;
+  }
+
+  const whereClause = filters.length ? `WHERE ${filters.join(" AND ")}` : "";
+
   const countSql = `SELECT COUNT(*) as total FROM active_sessions ${whereClause};`;
-  const { total } = db.prepare(countSql).get() as { total: number };
+
+  const { total } = db.prepare(countSql).get(params) as { total: number };
 
   if (total === 0) return null;
-
   const totalPages = Math.ceil(total / pageSize);
   const offset = (page - 1) * pageSize;
 
@@ -344,9 +357,13 @@ export function getActiveSessions(
     FROM active_sessions
     ${whereClause}
     ORDER BY startTime DESC
-    LIMIT ${pageSize} OFFSET ${offset};
+    LIMIT @limit OFFSET @offset;
   `;
-  const rows = db.prepare(dataSql).all() as ActiveSession[];
+  const rows = db.prepare(dataSql).all({
+    ...params,
+    limit: pageSize,
+    offset,
+  }) as ActiveSession[];
 
   return {
     data: rows,
