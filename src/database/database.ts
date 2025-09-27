@@ -22,6 +22,11 @@ export type GetActiveSessionsReturn = {
   data: ActiveSession[];
   totalPages: number;
 };
+
+function toSqlDate(date: Date | string): string {
+  return new Date(date).toISOString().slice(0, 19).replace("T", " ");
+}
+
 db.exec(`
   CREATE TABLE IF NOT EXISTS active_sessions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -324,9 +329,8 @@ export function getActiveSessions(
   pageSize = 10
 ): GetActiveSessionsReturn | null {
   const whereClause = range
-    ? `WHERE start_time >= '${range.start}' AND end_time <= '${range.end}'`
+    ? `WHERE start_time >= '${toSqlDate(range.start)}' AND end_time <= '${toSqlDate(range.end)}'`
     : "";
-
   const countSql = `SELECT COUNT(*) as total FROM active_sessions ${whereClause};`;
   const { total } = db.prepare(countSql).get() as { total: number };
 
