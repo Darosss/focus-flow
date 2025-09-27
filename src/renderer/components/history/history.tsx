@@ -22,6 +22,8 @@ import {
 } from "../ui/accordion";
 import { HistoryContent } from "./content";
 import { DateRange } from "./date-range";
+import { formatDate, formatTime } from "../../lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 export const HistoryView = () => {
   const [currentSessionId, setCurrentSessionId] = useState(null);
@@ -110,6 +112,10 @@ export const HistoryView = () => {
             </CardTitle>
             <CardDescription>
               Chronological list of window events and activities
+              <span className="text-xs text-primary">
+                {" "}
+                (start / name / duration)
+              </span>
             </CardDescription>
           </CardHeader>
           <CardContent className="h-full">
@@ -128,40 +134,78 @@ export const HistoryView = () => {
                   collapsible
                   onValueChange={(state) => setCurrentSessionId(Number(state))}
                 >
-                  {currentHistory.map((item, index) => (
-                    <AccordionItem
-                      value={item.id.toString()}
-                      key={index}
-                      className="items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors"
-                    >
-                      <AccordionTrigger className="text-sm text-muted-foreground font-mono flex w-full">
-                        <div className="w-1/5">{String(item.startTime)}</div>
-                        <div className="w-3/5">
-                          <div className="flex items-center gap-2">
-                            <Badge
-                              variant={!item.endTime ? "default" : "secondary"}
-                              className="text-xs"
-                            >
-                              {String(item?.endTime || "Active")}
-                            </Badge>
+                  {currentHistory.map((item, index) => {
+                    return (
+                      <AccordionItem
+                        value={item.id.toString()}
+                        key={index}
+                        className="items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors"
+                      >
+                        <AccordionTrigger className="text-sm text-muted-foreground font-mono flex w-full">
+                          <div className="w-1/5">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="outline" className="text-xs">
+                                  {formatTime(
+                                    (new Date().getTime() -
+                                      new Date(item.startTime).getTime()) /
+                                      1000
+                                  )}{" "}
+                                  ago
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {formatDate(item.startTime)}
+                              </TooltipContent>
+                            </Tooltip>
                           </div>
-                          <div className="text-sm text-muted-foreground">
-                            <span className="font-medium">{item.appName}</span>{" "}
-                            - {item.platform}
+                          <div className="w-3/5">
+                            <div className="flex items-center gap-2">
+                              <Badge
+                                variant={
+                                  !item.endTime ? "default" : "secondary"
+                                }
+                                className="text-xs"
+                              >
+                                {item?.endTime
+                                  ? formatDate(item.endTime)
+                                  : "Active"}
+                              </Badge>
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              <span className="font-medium">
+                                {item.appName}
+                              </span>{" "}
+                              - {item.platform}
+                            </div>
                           </div>
-                        </div>
-                        <div className="text-sm text-muted-foreground w-full">
-                          {String(item.startTime)}
-                          {item.endTime && String(" - " + item.endTime)}
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent className="flex items-center gap-4 w-full">
-                        {currentSessionId && (
-                          <HistoryContent sessionId={currentSessionId} />
-                        )}
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
+                          <div className="text-sm text-muted-foreground w-full">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="default" className="text-xs">
+                                  {formatTime(
+                                    (new Date(
+                                      item.endTime || new Date()
+                                    ).getTime() -
+                                      new Date(item.startTime).getTime()) /
+                                      1000
+                                  )}
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {formatDate(item.endTime)}
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="flex items-center gap-4 w-full">
+                          {currentSessionId && (
+                            <HistoryContent sessionId={currentSessionId} />
+                          )}
+                        </AccordionContent>
+                      </AccordionItem>
+                    );
+                  })}
                 </Accordion>
               )}
             </div>
